@@ -1,4 +1,4 @@
-PROJECT = blink2
+PROJECT = pico_squared
 
 ICEPACK = icepack
 NEXTPNR = nextpnr-ice40 --randomize-seed --up5k --package sg48
@@ -9,7 +9,7 @@ DFU-SUFFIX = dfu-suffix -v 1209 -p b1c0
 
 PICO_ICE_SDK = ../../pico-ice-sdk/
 PCF_FILE = pico_ice.pcf
-RTL = top.v
+RTL = top.v spi.v spram_16k32.v spram_init.v picorv32/picorv32.v uart/uart_rx.v uart/uart_tx.v
 
 all: $(PROJECT).uf2 $(PROJECT).dfu
 
@@ -26,7 +26,7 @@ pico_ice_bitstream.json: ${RTL}
 
 $(PROJECT).json: $(RTL)
 	${YOSYS} -p "read_verilog ${RTL}; synth_ice40 -top $(PROJECT)_top -json $@" >$*.yosys.log
-	-grep -i -e err -e warn $*.yosys.log
+	-grep -e Error -e Warn $*.yosys.log
 
 .json.asc:
 	${NEXTPNR} -q -l $*.nextpnr.log --pcf $(PCF_FILE) --top $(PROJECT)_top --json $< --asc $@

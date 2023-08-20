@@ -2,6 +2,8 @@
 *.asc
 *.bin
 *.uf2
+*.dfu
+*.hex
 *.log
 *.json
 
@@ -11,3 +13,4 @@ results.xml
 stats.md
 sim_build/
 
+build/
