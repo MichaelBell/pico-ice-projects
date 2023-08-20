@@ -8,7 +8,7 @@ PROG_FILE ?= lcd.hex
 START_SIG ?= 0
 END_SIG ?= 0
 
-VERILOG_SOURCES += tb_top.v sim_sram.v top.v spi.v spram_16k32.v spram_init.v picorv32/picorv32.v uart/uart_rx.v uart/uart_tx.v
+VERILOG_SOURCES += tb_top.v sim_sram.v top.v spi.v spram_16k32.v spram_init.v nano_mul.v picorv32/picorv32.v uart/uart_rx.v uart/uart_tx.v
 COMPILE_ARGS    += -DSIM -DPROG_FILE=\"$(PROG_FILE)\" -DSTART_SIG=$(START_SIG) -DEND_SIG=$(END_SIG)
 
 COMPILE_ARGS += -DICE40 -DNO_ICE40_DEFAULT_ASSIGNMENTS

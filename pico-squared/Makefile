@@ -9,7 +9,7 @@ DFU-SUFFIX = dfu-suffix -v 1209 -p b1c0
 
 PICO_ICE_SDK = ../../pico-ice-sdk/
 PCF_FILE = pico_ice.pcf
-RTL = top.v spi.v spram_16k32.v spram_init.v picorv32/picorv32.v uart/uart_rx.v uart/uart_tx.v
+RTL = top.v spi.v spram_16k32.v spram_init.v nano_mul.v picorv32/picorv32.v uart/uart_rx.v uart/uart_tx.v
 
 all: $(PROJECT).uf2 $(PROJECT).dfu
 
@@ -25,7 +25,7 @@ pico_ice_bitstream.json: ${RTL}
 .SUFFIXES: .sv .elf .vcd .json .asc .bit .dfu .uf2
 
 $(PROJECT).json: $(RTL)
-	${YOSYS} -p "read_verilog ${RTL}; synth_ice40 -top $(PROJECT)_top -json $@" >$*.yosys.log
+	${YOSYS} -p "read_verilog ${RTL}; synth_ice40 -dsp -top $(PROJECT)_top -json $@" >$*.yosys.log
 	-grep -e Error -e Warn $*.yosys.log
 
 .json.asc:

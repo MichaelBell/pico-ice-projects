@@ -110,6 +110,14 @@ module pico_squared_top(
 	wire [31:0] mem_rdata;
 	wire [31:0] mem_wdata;
 	wire [ 3:0] mem_wstrb;
+    wire        pcpi_valid;
+    wire [31:0] pcpi_insn;
+    wire [31:0] pcpi_rs1;
+    wire [31:0] pcpi_rs2;
+    wire        pcpi_wr;
+    wire [31:0] pcpi_rd;
+    wire        pcpi_wait;
+    wire        pcpi_ready;
 	picorv32 #(
 		.PROGADDR_RESET(32'h 0000_0000),	// start or ROM
 		.STACKADDR(32'h 1001_0000),			// end of SPRAM
@@ -122,7 +130,8 @@ module pico_squared_top(
 		.ENABLE_IRQ(0),
 		.ENABLE_IRQ_QREGS(0),
 		.CATCH_MISALIGN(0),
-		.CATCH_ILLINSN(0)
+		.CATCH_ILLINSN(0),
+        .ENABLE_PCPI(1)
 	) cpu_I (
 		.clk       (cpu_clk),
 		.resetn    (rstn && ram_init_done),
@@ -132,7 +141,15 @@ module pico_squared_top(
 		.mem_addr  (mem_addr),
 		.mem_wdata (mem_wdata),
 		.mem_wstrb (mem_wstrb),
-		.mem_rdata (mem_rdata)
+		.mem_rdata (mem_rdata),
+        .pcpi_valid(pcpi_valid),
+        .pcpi_insn (pcpi_insn),
+        .pcpi_rs1  (pcpi_rs1),
+        .pcpi_rs2  (pcpi_rs2),
+        .pcpi_wr   (pcpi_wr),
+        .pcpi_rd   (pcpi_rd),
+        .pcpi_wait (pcpi_wait),
+        .pcpi_ready(pcpi_ready)
 	);
 
     assign ram_sel   = ram_init_done ? (mem_addr[31:28] == 0 ? mem_valid : 1'b0) : 1'b1;
@@ -154,6 +171,19 @@ module pico_squared_top(
             ram_read_done <= ram_sel && ~ram_read_done;
 
     assign mem_ready = (ram_read_done && mem_valid) || (mem_wstrb != 4'h0 && ram_sel) || peri_sel;
+
+    picorv32_pcpi_nanoV_mul i_mul(
+			.clk       (cpu_clk   ),
+			.resetn    (rstn  && ram_init_done),
+			.pcpi_valid(pcpi_valid),
+			.pcpi_insn (pcpi_insn ),
+			.pcpi_rs1  (pcpi_rs1  ),
+			.pcpi_rs2  (pcpi_rs2  ),
+			.pcpi_wr   (pcpi_wr   ),
+			.pcpi_rd   (pcpi_rd   ),
+			.pcpi_wait (pcpi_wait ),
+			.pcpi_ready(pcpi_ready)
+    );
 
     // Peripherals (GPIO, LEDs, UART)
     reg [7:0] output_data;
