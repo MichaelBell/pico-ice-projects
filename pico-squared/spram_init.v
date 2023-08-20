@@ -51,7 +51,11 @@ module spram_init(
         end else if (!done) begin
             if (spram_we[0]) begin
                 spram_we <= 0;
+`ifdef SIM
                 {done, spi_addr[13:0]} <= next_spi_addr[14:0];
+`else
+                {done, spi_addr[15:0]} <= next_spi_addr;
+`endif
             end else if (!reading && !spi_busy) begin
                 spi_start_read <= 1;
                 reading <= 1;

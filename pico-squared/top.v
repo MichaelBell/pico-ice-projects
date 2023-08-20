@@ -105,7 +105,7 @@ module pico_squared_top(
 	// CPU
 	wire        mem_valid;
 	wire        mem_instr;
-	reg         mem_ready;
+	wire        mem_ready;
 	wire [31:0] mem_addr;
 	wire [31:0] mem_rdata;
 	wire [31:0] mem_wdata;
@@ -145,13 +145,15 @@ module pico_squared_top(
     
     assign mem_rdata = peri_sel ? peri_rdata : ram_rdata;
 
+    reg ram_read_done;
     always @(posedge cpu_clk)
         if (!rstn)
-            mem_ready <= 0;
+            ram_read_done <= 0;
         else
             // Always ready the cycle after valid
-            mem_ready <= mem_valid && ~mem_ready;
+            ram_read_done <= ram_sel && ~ram_read_done;
 
+    assign mem_ready = (ram_read_done && mem_valid) || (mem_wstrb != 4'h0 && ram_sel) || peri_sel;
 
     // Peripherals (GPIO, LEDs, UART)
     reg [7:0] output_data;
