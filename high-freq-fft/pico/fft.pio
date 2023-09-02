@@ -1,0 +1,57 @@
+; This is basically SPI, RP2040 is master
+; Data is exchanged on clock going high
+; Sync side channel goes high for first bin
+; We only care about the low 32 bins, so only input values for them
+;
+; Pins: Sideset: Clock
+; Out: Sample to FPGA
+; In:  Bin from FPGA
+; JMP: Sync
+.program fft
+.side_set 1
+top:
+    out pins, 1          side 0
+    mov x, y             side 0  [4]  ; y = 32*16-1
+    jmp pin read_bins    side 0
+    jmp top              side 1  [6]
+read_loop:
+    out pins, 1          side 0  [6]
+read_bins:
+    in pins, 1           side 1
+    jmp x--, read_loop   side 1  [5]
+
+
+% c-sdk {
+
+void fft_program_init(PIO pio, uint sm, uint offset, uint pin_clk, uint pin_out, uint pin_in, uint pin_sync) {
+    pio_gpio_init(pio, pin_clk);
+    pio_gpio_init(pio, pin_out);
+    pio_gpio_init(pio, pin_in);
+    pio_gpio_init(pio, pin_sync);
+
+    gpio_set_pulls(pin_clk, false, false);
+    gpio_set_pulls(pin_out, false, false);
+    gpio_set_pulls(pin_in, false, false);
+    gpio_set_pulls(pin_sync, false, false);
+
+    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_clk) | (1u << pin_out), (1u << pin_clk) | (1u << pin_out) | (1u << pin_in) | (1u << pin_sync));
+
+    pio_sm_config c = fft_program_get_default_config(offset);
+    sm_config_set_in_pins(&c, pin_in);
+    sm_config_set_in_shift(&c, true, true, 32);
+    sm_config_set_out_pins(&c, pin_out, 1);
+    sm_config_set_out_shift(&c, true, true, 16);
+    sm_config_set_jmp_pin(&c, pin_sync);
+    sm_config_set_sideset_pins(&c, pin_clk);
+    sm_config_set_clkdiv(&c, 1.f);
+
+    pio_sm_put(pio, sm, 32*16-1);
+    pio_sm_exec(pio, sm, pio_encode_pull(false, true));
+    pio_sm_exec(pio, sm, pio_encode_mov(pio_y, pio_osr));
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+
+%}
+

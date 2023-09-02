@@ -118,8 +118,8 @@ module femto_test_top(
 	) cpu_I (
 		.clk       (cpu_clk),
 		.resetn    (rstn && ram_init_done),
-		.mem_rbusy (!mem_rdone && mem_read),
-        .mem_wbusy (!mem_wdone && (mem_wstrb != 0)),
+		.mem_rbusy (1'b0),
+        .mem_wbusy (1'b0),
 		.mem_rstrb (mem_read),
 		.mem_addr  (mem_addr),
 		.mem_wdata (mem_wdata),

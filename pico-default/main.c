@@ -59,7 +59,7 @@ int main(void) {
     ice_usb_init();
 
     // Let the FPGA start
-    ice_fpga_init(24);
+    ice_fpga_init(12);
     ice_fpga_start();
 
     // Prevent the LEDs from glowing slightly
