@@ -25,6 +25,7 @@
 // pico-sdk
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
+#include "pico/multicore.h"
 #include "hardware/irq.h"
 #include "hardware/gpio.h"
 #include "hardware/uart.h"
@@ -41,6 +42,7 @@
 #include "fft.pio.h"
 
 #include "logic_analyser.h"
+#include "st7789_lcd.h"
 
 #define PIN_RESETN 7
 
@@ -55,13 +57,18 @@ static int sample_in_num = 0;
 
 static int out_idx = 0;
 #define NUM_BINS 32
-static uint16_t bins_out[NUM_BINS] __attribute__((aligned(2*NUM_BINS)));
+#define BIN_REPEATS 8
+static uint16_t bins_out[NUM_BINS*BIN_REPEATS] __attribute__((aligned(2*NUM_BINS*BIN_REPEATS)));
 static int max_bin;
 
 static int fft_sm;
 static int fft_rx_channel;
 static int adc_tx_channel;
 #define fft_pio pio0
+
+static ST7789 lcd;
+static uint32_t st7789_data_buf[1024];
+static uint32_t st7789_ctrl_buf[1024];
 
 static void send_sample(int period)
 {
@@ -146,7 +153,7 @@ static void setup_fft_pio() {
     channel_config_set_dreq(&c, pio_get_dreq(fft_pio, fft_sm, false));
     channel_config_set_read_increment(&c, false);
     channel_config_set_write_increment(&c, true);
-    channel_config_set_ring(&c, true, 6);  // LOG2(NUM_BINS)
+    channel_config_set_ring(&c, true, 10);  // LOG2(NUM_BINS*BIN_REPEATS)
     dma_channel_configure(fft_rx_channel, &c,
                           bins_out,              // write address
                           &fft_pio->rxf[fft_sm], // read address
@@ -165,6 +172,7 @@ static void start_adc() {
         false    // Shift each sample to 8 bits when pushing to FIFO
     );
 
+    //adc_set_clkdiv(240); // 200kHz sample rate
     adc_set_clkdiv(4800); // 10kHz sample rate
 
     adc_tx_channel = dma_claim_unused_channel(true);
@@ -179,6 +187,35 @@ static void start_adc() {
                           &adc_hw->fifo,         // read address
                           0x7FFFFFFF,            // ~forever
                           true);
+}
+
+void core1_main() {
+    while (1) {
+        st7789_wait_for_transfer_complete(&lcd);
+
+        const int bin_width = 240 / NUM_BINS;
+        for (int i = 1; i < NUM_BINS; ++i) {
+            uint32_t val = 0;
+            for (int j = 0; j < BIN_REPEATS; ++j) {
+                val += bins_out[i + j * NUM_BINS];
+            }
+
+            //printf("%d ", val);
+            //val >>= 1;
+
+            if (val > 240) val = 240;
+            if (val < 240) {
+                st7789_start_pixels_at(&lcd, i * bin_width, 0, (i+1) * bin_width - 1, 239-val);
+                st7789_repeat_pixel(&lcd, 0, bin_width * (240-val));
+            }
+            if (val > 0) {
+                st7789_start_pixels_at(&lcd, i * bin_width, 240-val, (i+1) * bin_width - 1, 239);
+                st7789_repeat_pixel(&lcd, 0x1F, bin_width * val);
+            } 
+        }
+        //printf("\n");
+        st7789_trigger_transfer(&lcd);
+    }
 }
 
 int main(void) {
@@ -227,7 +264,13 @@ int main(void) {
 
     setup_fft_pio();
     logic_analyser_init(pio0, 2, 4, 500, 100);
+    st7789_init(&lcd, pio1, pio_claim_unused_sm(pio1, true), st7789_data_buf, st7789_ctrl_buf);
+    st7789_start_pixels_at(&lcd, 0, 0, 239, 239);
+    st7789_repeat_pixel(&lcd, 0, 240*240);
+    st7789_trigger_transfer(&lcd);
     sleep_ms(2);
+
+    multicore_launch_core1(&core1_main);
 
     gpio_put(PIN_RESETN, 1);
     sleep_us(100);
@@ -262,14 +305,18 @@ int main(void) {
         }
 #endif
 
-#if 1
+#if 0
         if (get_absolute_time() >= next_time) {
             next_time = delayed_by_ms(get_absolute_time(), 200);
-            uint16_t max_val = 0;
-            for (int i = 0; i < NUM_BINS; ++i) {
-                printf("%d ", bins_out[i]);
-                if (bins_out[i] > max_val) {
-                    max_val = bins_out[i];
+            uint32_t max_val = 0;
+            for (int i = 1; i < NUM_BINS; ++i) {
+                uint32_t val = 0;
+                for (int j = 0; j < BIN_REPEATS; ++j) {
+                    val += bins_out[i + j * NUM_BINS];
+                }
+                printf("%d ", val);
+                if (val > max_val) {
+                    max_val = val;
                     max_bin = i;
                 }
             }
