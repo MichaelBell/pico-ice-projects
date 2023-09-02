@@ -153,7 +153,7 @@ static void setup_fft_pio() {
     channel_config_set_dreq(&c, pio_get_dreq(fft_pio, fft_sm, false));
     channel_config_set_read_increment(&c, false);
     channel_config_set_write_increment(&c, true);
-    channel_config_set_ring(&c, true, 10);  // LOG2(NUM_BINS*BIN_REPEATS)
+    channel_config_set_ring(&c, true, 9);  // LOG2(2*NUM_BINS*BIN_REPEATS)
     dma_channel_configure(fft_rx_channel, &c,
                           bins_out,              // write address
                           &fft_pio->rxf[fft_sm], // read address
