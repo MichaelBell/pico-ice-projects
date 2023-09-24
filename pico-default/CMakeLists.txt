@@ -15,11 +15,13 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/pico-ice-sdk/)
 add_executable(${CMAKE_PROJECT_NAME}
     main.c
     usb_descriptors.c
-    sram.c
+    logic_analyser.c
+    #sram.c
     )
 target_link_libraries(${CMAKE_PROJECT_NAME}
     pico_ice_sdk
     pico_ice_usb
+    pico_stdio_usb
     )
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}

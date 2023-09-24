@@ -34,36 +34,72 @@
 #include "ice_fpga.h"
 #include "ice_led.h"
 #include "ice_sram.h"
+#include "ice_fram.h"
+#include "ice_spi.h"
 
-#include "sram.h"
+//#include "sram.h"
+
+#include "logic_analyser.h"
 
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
 
 int main(void) {
-    set_sys_clock_khz(120 * 1000, true);
+    set_sys_clock_khz(102 * 1000, true);
+    stdio_init_all();
+
+    ice_fpga_stop();
 
     // Enable the UART
     uart_init(uart0, 115200);
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 
-    ice_fpga_stop();
-    setup_simulated_sram();
-
-    ice_sram_init();
-    ice_sram_read_blocking(0, emu_ram, 65536);
-    gpio_set_dir(ICE_SRAM_CS_PIN, GPIO_IN);
-
     // Configure the piping as defined in <tusb_config.h>
     ice_usb_init();
+    tud_task();
+
+#if 0
+    for (int i = 0; i < 7000; ++i) {
+        sleep_ms(1);
+        tud_task();
+    }
+    printf("Hello world\n");
+#endif
+
+    //setup_simulated_sram();
+
+    ice_fram_init(true);
+
+    uint8_t id[4];
+    ice_fram_get_id(id);
+    printf("FRAM ID: %02x:%02x:%02x:%02x\n", id[0], id[1], id[2], id[3]);
+
+    //ice_sram_init();
+    //ice_sram_read_blocking(0, emu_ram, 65536);
+    //gpio_set_dir(ICE_SRAM_CS_PIN, GPIO_IN);
+
+#if 0
+    // Arm the LA
+    logic_analyser_init(pio0, 6, 6, 3000, 1);
+    logic_analyser_arm(6, false);
+#endif
 
     // Let the FPGA start
-    ice_fpga_init(12);
+    ice_fpga_init(17);
     ice_fpga_start();
 
     // Prevent the LEDs from glowing slightly
     ice_led_init();
+
+#if 0
+    for (int i = 0; i < 1000; ++i) {
+        sleep_ms(1);
+        tud_task();
+    }
+
+    logic_analyser_print_capture_buf();
+#endif
 
     while (true) {
         tud_task();

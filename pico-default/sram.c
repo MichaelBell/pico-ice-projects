@@ -96,7 +96,7 @@ static void setup_tx_channel()
 }
 
 static inline bool is_cs_high() {
-#if 0
+#if 1
     if (gpio_get(SIM_SRAM_SPI_CS)) {
         if (gpio_get(SIM_SRAM_SPI_CS)) {
             // Must be high for 2 cycles to count - avoids deselecting on a glitch.
