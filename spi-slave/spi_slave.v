@@ -41,7 +41,7 @@ end
     end
     assign spi_miso = reading ? data_out[bit_addr] : 0;
 
-    parameter INIT_FILE = "asm_blink/asm_blink.hex";
+    parameter INIT_FILE = "asm_blink/pwm_blink.hex";
     initial begin
         if (INIT_FILE != "")
             $readmemh(INIT_FILE, data);

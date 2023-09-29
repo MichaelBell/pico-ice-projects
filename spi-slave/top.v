@@ -42,18 +42,27 @@ module spi_slave_top(
   assign led_r = !PV_CS;
   assign led_g = PV_CS;
 
-  reg [2:0] debounce_cs;
-  reg cur_cs;
+/*
+  localparam MAX_BUFFER = 1;
+  wire [MAX_BUFFER:0] buffer_cs_in;
+  wire [MAX_BUFFER:0] buffer_cs_out;
+  assign buffer_cs_in = {buffer_cs_out[MAX_BUFFER-1:0], PV_CS};
+  SB_LUT4 #(
+ .LUT_INIT(16'd2)
+ ) buffers [MAX_BUFFER:0] (
+ .O(buffer_cs_out),
+ .I0(buffer_cs_in),
+ .I1(1'b0),
+ .I2(1'b0),
+ .I3(1'b0)
+ );
 
-  always @(posedge clk) begin
-    debounce_cs <= {debounce_cs[1:0], PV_CS};
-    if (debounce_cs == 3'b111)
-      cur_cs <= debounce_cs;
-    else if (debounce_cs == 3'b000)
-      cur_cs <= debounce_cs;
-  end
+  wire cur_cs = PV_CS & buffer_cs_out[MAX_BUFFER];
 
   spi_slave spi_ram(PV_SCK, PV_MOSI, cur_cs, PV_MISO, button, led_b, ICE_19);
+*/
+
+  spi_slave spi_ram(PV_SCK, PV_MOSI, PV_CS, PV_MISO, button, led_b, ICE_19);
 
   assign ICE_PMOD2B_IO1 = cur_cs;
   assign ICE_PMOD2B_IO2 = PV_SCK;

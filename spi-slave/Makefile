@@ -10,6 +10,7 @@ DFU-SUFFIX = dfu-suffix -v 1209 -p b1c0
 PICO_ICE_SDK = ../../pico-ice-sdk/
 PCF_FILE = pico_ice.pcf
 RTL = top.v spi_slave.v
+PAYLOAD = asm_blink/pwm_blink.hex
 
 all: $(PROJECT).uf2 $(PROJECT).dfu
 
@@ -20,7 +21,7 @@ clean:
 flash: pico_ice_bitstream.dfu
 	$(DFU-UTIL) -D $(PROJECT).dfu
 
-pico_ice_bitstream.json: ${RTL} ${PCF_FILE} asm_blink/asm_blink.hex
+pico_ice_bitstream.json: ${RTL} ${PCF_FILE} ${PAYLOAD}
 
 .SUFFIXES: .sv .elf .vcd .json .asc .bit .dfu .uf2
 
