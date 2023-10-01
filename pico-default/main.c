@@ -41,11 +41,13 @@
 
 #include "logic_analyser.h"
 
+void test_spi();
+
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
 
 int main(void) {
-    set_sys_clock_khz(102 * 1000, true);
+    set_sys_clock_khz(120 * 1000, true);
     stdio_init_all();
 
     ice_fpga_stop();
@@ -60,7 +62,7 @@ int main(void) {
     tud_task();
 
 #if 0
-    for (int i = 0; i < 7000; ++i) {
+    for (int i = 0; i < 5000; ++i) {
         sleep_ms(1);
         tud_task();
     }
@@ -69,24 +71,20 @@ int main(void) {
 
     //setup_simulated_sram();
 
+#if 0
     ice_fram_init(true);
 
     uint8_t id[4];
     ice_fram_get_id(id);
     printf("FRAM ID: %02x:%02x:%02x:%02x\n", id[0], id[1], id[2], id[3]);
+#endif
 
     //ice_sram_init();
     //ice_sram_read_blocking(0, emu_ram, 65536);
     //gpio_set_dir(ICE_SRAM_CS_PIN, GPIO_IN);
 
-#if 0
-    // Arm the LA
-    logic_analyser_init(pio0, 6, 6, 3000, 1);
-    logic_analyser_arm(6, false);
-#endif
-
     // Let the FPGA start
-    ice_fpga_init(17);
+    ice_fpga_init(12);
     ice_fpga_start();
 
     // Prevent the LEDs from glowing slightly
@@ -98,11 +96,36 @@ int main(void) {
         tud_task();
     }
 
-    logic_analyser_print_capture_buf();
+    // Arm the LA
+    logic_analyser_init(pio0, 3, 5, 10000, 50);
+    logic_analyser_arm(4, false);
+
+    //logic_analyser_print_capture_buf();
 #endif
 
+#if 0
+    gpio_init(5);
+    gpio_put(5, 1);
+    gpio_set_dir(5, GPIO_OUT);
+#endif
+
+#if 0
+    for (int i = 0; i < 1000; ++i) {
+        sleep_ms(1);
+        tud_task();
+    }
+    test_spi();
+#endif
+
+    bool done_capture = false;
     while (true) {
         tud_task();
+#if 0
+        if (!done_capture && logic_analyser_is_capture_done()) {
+            done_capture = true;
+            logic_analyser_print_capture_buf(2500);
+        }
+#endif
     }
     return 0;
 }

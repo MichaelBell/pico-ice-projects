@@ -1,4 +1,4 @@
-NAME    = pwm_blink
+NAME    = pwm_fade
 CPU     = cortex-m0plus
 ARMGNU  = arm-none-eabi
 AFLAGS  = --warn --fatal-warnings -mcpu=$(CPU) -g

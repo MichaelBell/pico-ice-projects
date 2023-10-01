@@ -16,6 +16,7 @@ add_executable(${CMAKE_PROJECT_NAME}
     main.c
     usb_descriptors.c
     logic_analyser.c
+    spi-ram.c
     #sram.c
     )
 target_link_libraries(${CMAKE_PROJECT_NAME}

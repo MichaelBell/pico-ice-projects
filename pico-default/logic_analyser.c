@@ -90,7 +90,11 @@ void logic_analyser_arm(uint trigger_pin, bool trigger_level) {
     pio_sm_set_enabled(pio, sm, true);
 }
 
-void logic_analyser_print_capture_buf() {
+bool logic_analyser_is_capture_done() {
+    return !dma_channel_is_busy(dma_chan);
+}
+
+void logic_analyser_print_capture_buf(int min_sample) {
     // Display the capture buffer in text form, like this:
     // 00: __--__--__--__--__--__--
     // 01: ____----____----____----
@@ -100,7 +104,7 @@ void logic_analyser_print_capture_buf() {
     uint record_size_bits = bits_packed_per_word();
     for (int pin = 0; pin < pin_count; ++pin) {
         printf("%02d: ", pin + pin_base);
-        for (int sample = 0; sample < n_samples; ++sample) {
+        for (int sample = min_sample; sample < n_samples; ++sample) {
             uint bit_index = pin + sample * pin_count;
             uint word_index = bit_index / record_size_bits;
             // Data is left-justified in each FIFO entry, hence the (32 - record_size_bits) offset
