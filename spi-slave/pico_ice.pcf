@@ -286,8 +286,10 @@ set_io -nowarn ICE_PMOD2B_DIR   26
 set_io -nowarn PV_SCK   34  # Blue
 set_io -nowarn PV_MISO  42  # Brown
 set_io -nowarn PV_MOSI  36  # Red
+set_io -nowarn PV_D2    38  # Green
+set_io -nowarn PV_D3    32  # Orange
 set_io -nowarn PV_CS    43  # Yellow
 
 set_frequency ICE_CLK 12
-set_frequency PV_SCK 24
+set_frequency PV_SCK 18
 

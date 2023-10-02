@@ -9,7 +9,7 @@ DFU-SUFFIX = dfu-suffix -v 1209 -p b1c0
 
 PICO_ICE_SDK = ../../pico-ice-sdk/
 PCF_FILE = pico_ice.pcf
-RTL = top.v spi_slave.v
+RTL = top.v spi_slave_tt.v
 PAYLOAD = asm_blink/pwm_fade.s
 
 all: $(PROJECT).uf2 $(PROJECT).dfu

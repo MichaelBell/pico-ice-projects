@@ -5,8 +5,10 @@ module spi_slave_top(
   output  LED_G,
   output  LED_B,
   input   PV_SCK,
-  input   PV_MOSI,
-  output  PV_MISO,
+  inout   PV_MOSI,
+  inout   PV_MISO,
+  inout   PV_D2,
+  inout   PV_D3,
   input   PV_CS,
   output  ICE_PMOD2B_IO1,
   output  ICE_PMOD2B_IO2,
@@ -62,9 +64,28 @@ module spi_slave_top(
   spi_slave spi_ram(PV_SCK, PV_MOSI, cur_cs, PV_MISO, button, led_b, ICE_19);
 */
 
-  spi_slave spi_ram(PV_SCK, PV_MOSI, PV_CS, PV_MISO, button, led_b, ICE_19);
+  //spi_slave spi_ram(PV_SCK, PV_MOSI, PV_CS, PV_MISO, button, led_b, ICE_19);
 
-  assign ICE_PMOD2B_IO1 = cur_cs;
+  // SPI slave
+  wire [3:0] uio_in = {PV_D3, PV_D2, PV_MISO, PV_MOSI};
+  wire [3:0] uio_out;
+  wire [3:0] spi_d_oe;
+  spi_slave i_spi(
+      .spi_clk(PV_SCK), 
+      .spi_d_in(uio_in[3:0]), 
+      .spi_select(PV_CS),
+      .spi_d_out(uio_out[3:0]),
+      .spi_d_oe(spi_d_oe),
+      .debug_clk(1'b0), 
+      .addr_in(3'b0));
+  assign PV_MOSI = spi_d_oe[0] ? uio_out[0] : 1'bz;
+  assign PV_MISO = spi_d_oe[1] ? uio_out[1] : 1'bz;
+  assign PV_D2   = spi_d_oe[2] ? uio_out[2] : 1'bz;
+  assign PV_D3   = spi_d_oe[3] ? uio_out[3] : 1'bz;
+  assign ICE_19 = 1'b0;
+  assign led_b = 1'b0;
+
+  assign ICE_PMOD2B_IO1 = PV_CS;
   assign ICE_PMOD2B_IO2 = PV_SCK;
   assign ICE_PMOD2B_IO3 = PV_MOSI;
   assign ICE_PMOD2B_IO4 = PV_MISO;
