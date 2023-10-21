@@ -65,8 +65,8 @@
 
 regular_func _stage2_boot
     // Take PWM, UART1 and IOBANK0 out of reset
-    ldr  r3, =(RESETS_BASE | REG_ALIAS_CLR_BITS)
-    ldr  r2, =(RESETS_RESET_UART1_BITS | RESETS_RESET_PWM_BITS | RESETS_RESET_IO_BANK0_BITS)
+    ldr  r3, =(RESETS_BASE | REG_ALIAS_CLR_BITS)  // 0x4000c000
+    ldr  r2, =(RESETS_RESET_UART1_BITS | RESETS_RESET_PWM_BITS | RESETS_RESET_IO_BANK0_BITS)  // 0x804020
     str  r2, [r3, #0]
 
     // Set GPIO 23-25 to SIO control
@@ -77,28 +77,27 @@ regular_func _stage2_boot
     str  r1, [r7, #0x58]   // GPIO25
 
     // Pull up GPIO 23 and 24
-    ldr  r5, =0x4001c000   // Pad base
-    movs r0, #0x4a        // Input, pull up
+    ldr  r5, =PADS_BANK0_BASE  // 0x4001c000
+    movs r0, #0x4a         // Input, pull up
     str  r0, [r5, #0x60]   // GPIO 23
     str  r0, [r5, #0x64]   // GPIO 24
 
-    lsls r3, r7, #26      // 0xD000_0000: SIO_BASE
+    lsls r6, r7, #26      // 0xD000_0000: SIO_BASE
 	lsls r2, r1, #25      // Bits 25 and 27 set.  27 doesn't matter as SIO control not enabled.
-	str  r2, [r3, #0x20]  // Enable output on GPIO 25
+	str  r2, [r6, #0x20]  // Enable output on GPIO 25
 
-    movs r1, #0
-    //b _exit_blink
+    movs r1, #0           // Counter for blink loops
 
 _blink:
     ldr  r0, [r7, #0x4c]  // GPIO 24 status
     lsls r0, r0, #14
-    bpl  _exit_blink
+    bpl  _exit_blink      // Exit blink on GPIO 24 low
 
-	str  r2, [r3, #0x1c]  // XOR GPIO 25
+	str  r2, [r6, #0x1c]  // XOR GPIO 25
 
-	lsrs r4, r3, #13      // Delay loop
+	lsrs r4, r6, #13      // Delay loop
 1:
-	subs r4,r4,#1
+	subs r4, r4,#1
 	bne 1b
     adds r1, #1
 	b   _blink
@@ -108,21 +107,25 @@ _exit_blink:
     (31 << SSI_CTRLR0_DFS_32_LSB) | /* 32 bits per data frame */ \
     (SSI_CTRLR0_TMOD_VALUE_TX_AND_RX << SSI_CTRLR0_TMOD_LSB)
 
-    ldr r3, =XIP_SSI_BASE             // Use as base address where possible
+    //ldr r3, =XIP_SSI_BASE             // Use as base address where possible
+    movs r3, #0x18
+    lsls r3, r3, #24
 
     // Disable SSI otherwise config doesn't work
     movs r2, #0
     str r2, [r3, #SSI_SSIENR_OFFSET]
 
-    ldr r2, =(CTRL0_SPI_TXRX)           // Set to transmit mode
+    //ldr r2, =(CTRL0_SPI_TXRX)           // Set to transmit mode
+    movs r2, #0x1f
+    lsls r2, #16
     str r2, [r3, #SSI_CTRLR0_OFFSET]
 
     movs r2, #1
     str r2, [r3, #SSI_SSIENR_OFFSET]
 
     // Store number of blinks to address 0x100
-    ldr r2, =0x02000100               // Write command to address 0x100
-    str r2, [r3, #SSI_DR0_OFFSET]
+    ldr r5, =0x02000100               // Write command to address 0x100
+    str r5, [r3, #SSI_DR0_OFFSET]
     str r1, [r3, #SSI_DR0_OFFSET]     // Store number of blinks
 
     // Read GPIO 23
@@ -146,12 +149,12 @@ _change_clock:
 
     // Clear RX FIFO
     ldr r2, [r3, #SSI_DR0_OFFSET]
-    ldr r2, [r3, #SSI_DR0_OFFSET]
+    ldr r1, [r3, #SSI_DR0_OFFSET]
 
     // Read value from 0x104
     ldr r2, =0x03000104               // Write command to address 0x100
     str r2, [r3, #SSI_DR0_OFFSET]
-    str r2, [r3, #SSI_DR0_OFFSET]
+    str r1, [r3, #SSI_DR0_OFFSET]
 
     // Wait for SSI idle    
 1:
@@ -164,12 +167,12 @@ _change_clock:
     ldr r1, [r3, #SSI_DR0_OFFSET]
 
     // Change clock divider
-    ldr r4, =ROSC_BASE
+    ldr r4, =ROSC_BASE              // 0x40060000
     str r1, [r4, #ROSC_DIV_OFFSET]
 
     // Decrement divider and write back
     subs r1, r1, #1
-    ldr r2, =0x02000104               // Write command to address 0x104
+    adds r2, r5, #4               // Write command to address 0x104
     str r2, [r3, #SSI_DR0_OFFSET]
     str r1, [r3, #SSI_DR0_OFFSET]
 
@@ -182,10 +185,6 @@ _finish_boot:
     // Disable SSI to allow further config
     movs r2, #0
     str r2, [r3, #SSI_SSIENR_OFFSET]
-
-    // Set baud rate
-    //movs r1, #PICO_FLASH_SPI_CLKDIV
-    //str r1, [r3, #SSI_BAUDR_OFFSET]
 
     ldr r1, =(CTRLR0_XIP)
     str r1, [r3, #SSI_CTRLR0_OFFSET]
