@@ -15,6 +15,7 @@
 #include "hardware/regs/pads_qspi.h"
 #include "hardware/regs/resets.h"
 #include "hardware/regs/rosc.h"
+#include "hardware/regs/clocks.h"
 
 .syntax unified
 .cpu cortex-m0plus
@@ -64,6 +65,12 @@
 .section .text
 
 regular_func _stage2_boot
+    // Start the PERI CLK
+    ldr  r3, =CLOCKS_BASE
+    movs r2, #1
+    lsls r2, #11
+    str  r2, [r3, #0x48]
+
     // Take PWM, UART1 and IOBANK0 out of reset
     ldr  r3, =(RESETS_BASE | REG_ALIAS_CLR_BITS)  // 0x4000c000
     ldr  r2, =(RESETS_RESET_UART1_BITS | RESETS_RESET_PWM_BITS | RESETS_RESET_IO_BANK0_BITS)  // 0x804020

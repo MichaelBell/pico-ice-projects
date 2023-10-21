@@ -291,5 +291,5 @@ set_io -nowarn PV_D3    32  # Orange
 set_io -nowarn PV_CS    43  # Yellow
 
 set_frequency ICE_CLK 12
-set_frequency PV_SCK 18
+set_frequency PV_SCK 16
 

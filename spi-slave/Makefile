@@ -9,7 +9,7 @@ DFU-SUFFIX = dfu-suffix -v 1209 -p b1c0
 
 PICO_ICE_SDK = ../../pico-ice-sdk/
 PCF_FILE = pico_ice.pcf
-RTL = top.v spi_slave_tt.v
+RTL = top.v spi_slave_tt.v ring_oscillator.v
 PAYLOAD = asm_blink/pwm_fade.s
 
 all: $(PROJECT).uf2 $(PROJECT).dfu
@@ -30,7 +30,7 @@ $(PROJECT).json: $(RTL)
 	-grep -i -e Error -e Warn $*.yosys.log
 
 .json.asc:
-	${NEXTPNR} -q -l $*.nextpnr.log --pcf $(PCF_FILE) --top $(PROJECT)_top --json $< --asc $@
+	${NEXTPNR} -q -l $*.nextpnr.log --pcf $(PCF_FILE) --top $(PROJECT)_top --json $< --asc $@ --ignore-loops
 
 .asc.bit:
 	${ICEPACK} $< $@

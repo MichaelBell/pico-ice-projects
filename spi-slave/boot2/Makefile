@@ -1,4 +1,4 @@
-NAME    = boot2_generic_03h
+NAME    = boot2_tt05
 CPU     = cortex-m0plus
 ARMGNU  = arm-none-eabi
 PICOSDK = ../../../pico-sdk
@@ -6,7 +6,7 @@ GCC_AFLAGS  = -Wall -Werror -mcpu=$(CPU) -g -I$(PICOSDK)/src/rp2_common/pico_pla
 AFLAGS = --warn --fatal-warnings -mcpu=$(CPU) -g
 LDFLAGS = -nostdlib
 
-all: $(NAME).hex
+all: $(NAME).txt
 
 $(NAME).o: $(NAME).S
 	$(ARMGNU)-gcc $(GCC_AFLAGS) -c $(NAME).S -o $(NAME).o
@@ -24,6 +24,9 @@ $(NAME).bit: $(NAME).bin
 
 $(NAME).hex: $(NAME).bit
 	od -t x2 -w2 -v $(NAME).bit | cut -d' ' -f2 -s > $(NAME).hex
+
+$(NAME).txt: $(NAME).bit
+	od -t x4 -w4 $(NAME).bit | awk 'BEGIN{OFS=""} {if (NF>1) {print NR-1, ": rp2040_rom = 32\047h", $$2, ";"}}' > $(NAME).txt
 
 clean: 
 	rm -f *.bin *.o *.elf *.list *.uf2 *.bit* *.hex

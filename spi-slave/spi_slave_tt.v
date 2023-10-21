@@ -34,6 +34,17 @@ module spi_slave #( parameter RAM_LEN_BITS = 3, parameter DEBUG_LEN_BITS = 3, FA
     wire spi_mosi = spi_d_in[0];
     wire spi_miso;
 
+    wire [3:0] rosc_out;
+    RingOscillator #(.NUM_FAST_CLKS(4), .STAGES(11)) rosc (
+        .reset_n(1'b1),
+        .fast_clk(rosc_out)
+    );
+
+    reg [3:0] buffered_rosc_out;
+    always @(posedge spi_clk) begin
+        buffered_rosc_out <= rosc_out;
+    end
+
     initial ever_quad = 0;
 
     always @(posedge spi_clk) begin
@@ -59,6 +70,8 @@ module spi_slave #( parameter RAM_LEN_BITS = 3, parameter DEBUG_LEN_BITS = 3, FA
     always @(negedge spi_clk) begin
         if (cmd[11]) begin
             q_data_out <= cmd[2] ? ram_data[3:0] : ram_data[7:4];
+        end else if (cmd[13]) begin
+            q_data_out <= buffered_rosc_out;
         end else if (cmd[12]) begin
             q_data_out <= rp2040_rom2_nibble[3:0];
         end else begin
@@ -133,59 +146,60 @@ module spi_slave #( parameter RAM_LEN_BITS = 3, parameter DEBUG_LEN_BITS = 3, FA
 
     function [31:0] rp2040_rom(input [5:0] addr);
         case(addr)
-0: rp2040_rom = 32'h4a274b26;
-1: rp2040_rom = 32'h2105601a;
-2: rp2040_rom = 32'h64b94f26;
-3: rp2040_rom = 32'h65b96539;
-4: rp2040_rom = 32'h204a4d25;
-5: rp2040_rom = 32'h66686628;
-6: rp2040_rom = 32'h064a06bb;
-7: rp2040_rom = 32'h2100621a;
-8: rp2040_rom = 32'h03806cf8;
-9: rp2040_rom = 32'h61dad505;
-10: rp2040_rom = 32'h3c010b5c;
-11: rp2040_rom = 32'h3101d1fd;
-12: rp2040_rom = 32'h4b1ee7f6;
-13: rp2040_rom = 32'h609a2200;
-14: rp2040_rom = 32'h601a4a1d;
-15: rp2040_rom = 32'h609a2201;
-16: rp2040_rom = 32'h661a4a1c;
-17: rp2040_rom = 32'h6c786619;
-18: rp2040_rom = 32'hd5030380;
-19: rp2040_rom = 32'h010921ab;
-20: rp2040_rom = 32'he0126619;
-21: rp2040_rom = 32'h2a0e6a9a;
-22: rp2040_rom = 32'h6e1ad1fc;
-23: rp2040_rom = 32'h4a166e1a;
-24: rp2040_rom = 32'h661a661a;
-25: rp2040_rom = 32'h2a0e6a9a;
-26: rp2040_rom = 32'h6e1ad1fc;
-27: rp2040_rom = 32'h4c136e19;
-28: rp2040_rom = 32'h39016121;
-29: rp2040_rom = 32'h661a4a12;
-30: rp2040_rom = 32'h6a9a6619;
-31: rp2040_rom = 32'hd1fc2a0e;
-32: rp2040_rom = 32'h609a2200;
-33: rp2040_rom = 32'h6019490f;
-34: rp2040_rom = 32'h33f4490f;
-35: rp2040_rom = 32'h3bf46019;
-36: rp2040_rom = 32'h2101605a;
-37: rp2040_rom = 32'h490d6099;
-38: rp2040_rom = 32'h00004708;
-39: rp2040_rom = 32'h4000f000;
-40: rp2040_rom = 32'h00804020;
-41: rp2040_rom = 32'h40014074;
-42: rp2040_rom = 32'h4001c000;
-43: rp2040_rom = 32'h18000000;
-44: rp2040_rom = 32'h001f0000;
-45: rp2040_rom = 32'h02000100;
-46: rp2040_rom = 32'h03000104;
-47: rp2040_rom = 32'h40060000;
-48: rp2040_rom = 32'h02000104;
-49: rp2040_rom = 32'h005f0300;
-50: rp2040_rom = 32'h6b001218;
-51: rp2040_rom = 32'h10000201;
-            63: rp2040_rom = 32'h5030a774;
+0: rp2040_rom = 32'h22014b29;
+1: rp2040_rom = 32'h649a02d2;
+2: rp2040_rom = 32'h4a294b28;
+3: rp2040_rom = 32'h2105601a;
+4: rp2040_rom = 32'h64b94f28;
+5: rp2040_rom = 32'h65b96539;
+6: rp2040_rom = 32'h204a4d27;
+7: rp2040_rom = 32'h66686628;
+8: rp2040_rom = 32'h064a06be;
+9: rp2040_rom = 32'h21006232;
+10: rp2040_rom = 32'h03806cf8;
+11: rp2040_rom = 32'h61f2d505;
+12: rp2040_rom = 32'h3c010b74;
+13: rp2040_rom = 32'h3101d1fd;
+14: rp2040_rom = 32'h2318e7f6;
+15: rp2040_rom = 32'h2200061b;
+16: rp2040_rom = 32'h221f609a;
+17: rp2040_rom = 32'h601a0412;
+18: rp2040_rom = 32'h609a2201;
+19: rp2040_rom = 32'h661d4d1b;
+20: rp2040_rom = 32'h6c786619;
+21: rp2040_rom = 32'hd5030380;
+22: rp2040_rom = 32'h010921ab;
+23: rp2040_rom = 32'he0126619;
+24: rp2040_rom = 32'h2a0e6a9a;
+25: rp2040_rom = 32'h6e1ad1fc;
+26: rp2040_rom = 32'h4a156e19;
+27: rp2040_rom = 32'h6619661a;
+28: rp2040_rom = 32'h2a0e6a9a;
+29: rp2040_rom = 32'h6e1ad1fc;
+30: rp2040_rom = 32'h4c126e19;
+31: rp2040_rom = 32'h39016121;
+32: rp2040_rom = 32'h661a1d2a;
+33: rp2040_rom = 32'h6a9a6619;
+34: rp2040_rom = 32'hd1fc2a0e;
+35: rp2040_rom = 32'h609a2200;
+36: rp2040_rom = 32'h6019490d;
+37: rp2040_rom = 32'h33f4490d;
+38: rp2040_rom = 32'h3bf46019;
+39: rp2040_rom = 32'h2101605a;
+40: rp2040_rom = 32'h490b6099;
+41: rp2040_rom = 32'h00004708;
+42: rp2040_rom = 32'h40008000;
+43: rp2040_rom = 32'h4000f000;
+44: rp2040_rom = 32'h00804020;
+45: rp2040_rom = 32'h40014074;
+46: rp2040_rom = 32'h4001c000;
+47: rp2040_rom = 32'h02000100;
+48: rp2040_rom = 32'h03000104;
+49: rp2040_rom = 32'h40060000;
+50: rp2040_rom = 32'h005f0300;
+51: rp2040_rom = 32'h6b001218;
+52: rp2040_rom = 32'h10000201;
+            63: rp2040_rom = 32'hd3536af3;
             default:    
                 rp2040_rom = 0;
         endcase
@@ -193,24 +207,34 @@ module spi_slave #( parameter RAM_LEN_BITS = 3, parameter DEBUG_LEN_BITS = 3, FA
 
     function [31:0] rp2040_rom2(input [5:0] addr);
         case(addr)
-0: rp2040_rom2 = 32'h6809490f;
-1: rp2040_rom2 = 32'h4a0c4b0b;
-2: rp2040_rom2 = 32'h2104601a;
-3: rp2040_rom2 = 32'h200562d1;
-4: rp2040_rom2 = 32'h4d0a6250;
-5: rp2040_rom2 = 32'h6668204a;
-6: rp2040_rom2 = 32'h20014b0a;
-7: rp2040_rom2 = 32'h03416018;
-8: rp2040_rom2 = 32'h28011840;
-9: rp2040_rom2 = 32'h4249d101;
-10: rp2040_rom2 = 32'h60d81840;
-11: rp2040_rom2 = 32'h03a46a14;
-12: rp2040_rom2 = 32'he7f2d4f6;
-13: rp2040_rom2 = 32'h4000f000;
-14: rp2040_rom2 = 32'h400140a0;
-15: rp2040_rom2 = 32'h4001c000;
-16: rp2040_rom2 = 32'h10000100;
-17: rp2040_rom2 = 32'h40050050;
+0: rp2040_rom2 = 32'h21264a16;
+1: rp2040_rom2 = 32'h21706251;
+2: rp2040_rom2 = 32'h491562d1;
+3: rp2040_rom2 = 32'h21026311;
+4: rp2040_rom2 = 32'h4d146339;
+5: rp2040_rom2 = 32'h26556829;
+6: rp2040_rom2 = 32'h60116016;
+7: rp2040_rom2 = 32'h60110a09;
+8: rp2040_rom2 = 32'h21044d11;
+9: rp2040_rom2 = 32'h4b1165b9;
+10: rp2040_rom2 = 32'h60182001;
+11: rp2040_rom2 = 32'h44080341;
+12: rp2040_rom2 = 32'hd1012801;
+13: rp2040_rom2 = 32'h44084249;
+14: rp2040_rom2 = 32'h6cfc60d8;
+15: rp2040_rom2 = 32'hd4f603a4;
+16: rp2040_rom2 = 32'h60296829;
+17: rp2040_rom2 = 32'h60116016;
+18: rp2040_rom2 = 32'h60110a09;
+19: rp2040_rom2 = 32'h140907c9;
+20: rp2040_rom2 = 32'h6cfc60d9;
+21: rp2040_rom2 = 32'hd5fc03a4;
+22: rp2040_rom2 = 32'h0000e7e6;
+23: rp2040_rom2 = 32'h40038000;
+24: rp2040_rom2 = 32'h00000101;
+25: rp2040_rom2 = 32'h10000100;
+26: rp2040_rom2 = 32'h10000400;
+27: rp2040_rom2 = 32'h40050050;
             default:    
                 rp2040_rom2 = 0;
         endcase
