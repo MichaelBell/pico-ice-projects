@@ -15,7 +15,9 @@ _reset:
 	str r1, [r2, #0x24]   // Set divisor somewhere near 9600 baud
 	movs r1, #0x70
 	str r1, [r2, #0x2c]   // UART LCR_H. Enable FIFOs, 8 bits, 1 stop, no parity
-	ldr r1, =0x101
+	ldr r1, =0x101        // While ldr =0x101 is longer the mov add sequence is actually worse for synthesis
+	//movs r1, #0x81
+	//adds r1, r1, #0x80
 	str r1, [r2, #0x30]   // UART CR: Enable, transmit only
 
 	movs r1, #2           // Function 2 (UART)
@@ -33,8 +35,8 @@ _reset:
 
 	// Send number of blinks
 	str r1, [r2]
-	lsrs r1, r1, #8
-	str r1, [r2]
+	//lsrs r1, r1, #8    // Only send low byte as we are struggling to fit in one Tiny Tapeout tile
+	//str r1, [r2]
 
 	// Random source
 	ldr r5, =0x10000400
