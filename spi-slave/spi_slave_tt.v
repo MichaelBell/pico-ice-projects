@@ -41,7 +41,7 @@ module spi_slave #( parameter RAM_LEN_BITS = 3, parameter DEBUG_LEN_BITS = 3, FA
     );
 
     reg [3:0] buffered_rosc_out;
-    always @(posedge spi_clk) begin
+    always @(negedge spi_clk) begin
         buffered_rosc_out <= rosc_out;
     end
 
@@ -60,31 +60,34 @@ module spi_slave #( parameter RAM_LEN_BITS = 3, parameter DEBUG_LEN_BITS = 3, FA
         end
     end
 
-    wire [31:0] rp2040_rom_word = rp2040_rom(cmd[10:5]);
-    wire [31:0] rp2040_rom_nibble = rp2040_rom_word >> {cmd[4:3], ~cmd[2], 2'b00};
-    wire [31:0] rp2040_rom2_word = rp2040_rom2(cmd[10:5]);
-    wire [31:0] rp2040_rom2_nibble = rp2040_rom2_word >> {cmd[4:3], ~cmd[2], 2'b00};
+    wire [31:0] rp2040_rom_word = rp2040_rom(next_cmd[10:5]);
+    wire [31:0] rp2040_rom_nibble = rp2040_rom_word >> {next_cmd[4:3], ~next_cmd[2], 2'b00};
+    wire [31:0] rp2040_rom2_word = rp2040_rom2(next_cmd[10:5]);
+    wire [31:0] rp2040_rom2_nibble = rp2040_rom2_word >> {next_cmd[4:3], ~next_cmd[2], 2'b00};
 
-    wire [7:0] ram_data = data[cmd[RAM_LEN_BITS-1+3:3]];
+    wire [7:0] ram_data = data[next_cmd[RAM_LEN_BITS-1+3:3]];
 
-    always @(negedge spi_clk) begin
-        if (cmd[11]) begin
-            q_data_out <= cmd[2] ? ram_data[3:0] : ram_data[7:4];
-        end else if (cmd[13]) begin
+    always @(posedge spi_clk) begin
+        if (next_cmd[11]) begin
+            q_data_out <= next_cmd[2] ? ram_data[3:0] : ram_data[7:4];
+        end else if (next_cmd[13]) begin
             q_data_out <= buffered_rosc_out;
-        end else if (cmd[12]) begin
+        end else if (next_cmd[12]) begin
             q_data_out <= rp2040_rom2_nibble[3:0];
         end else begin
             q_data_out <= rp2040_rom_nibble[3:0];
         end
-        data_out_bits <= 2'h3 - cmd[1:0];
+        data_out_bits <= 2'h3 - next_cmd[1:0];
     end
     assign data_out = q_data_out[data_out_bits];
     assign spi_miso = reading ? data_out : 0;
     assign spi_d_out = quad ? q_data_out : {2'b0, spi_miso, 1'b0};
 
     wire [5:0] next_start_count = {1'b0,start_count} + 6'd1;
-    wire [31:0] next_cmd = {cmd[30:0],spi_mosi};
+    wire read_cmd = !reading && !writing && !bad_cmd;
+    wire increment_addr = !delay && (reading || writing);
+    wire [30:0] next_cmd = read_cmd ? ((next_start_count == 32) ? {cmd[26:0], spi_mosi, 3'h0} : {cmd[29:0], spi_mosi}) :
+                           cmd + (increment_addr ? (quad ? 4 : 1) : 0);
 
     always @(posedge spi_clk or posedge spi_select) begin
         if (spi_select) begin
@@ -98,28 +101,27 @@ module spi_slave #( parameter RAM_LEN_BITS = 3, parameter DEBUG_LEN_BITS = 3, FA
             delay <= 0;
         end else begin
             start_count <= next_start_count[4:0];
+            cmd <= next_cmd;
 
-            if (!reading && !writing && !bad_cmd) begin
-                cmd <= next_cmd[30:0];
+            if (read_cmd) begin
                 if (next_start_count == 31) begin
                     if (next_cmd[30:23] == 8'h03) begin
                         spi_d_oe <= 4'b0010;
                     end
                 end
                 if (next_start_count == 32) begin
-                    cmd <= {next_cmd[27:0], 3'h0};
-                    if (next_cmd[31:24] == 3) begin
+                    if (cmd[30:23] == 3) begin
                         reading <= 1;
                         quad <= 0;
-                    end else if (next_cmd[31:24] == 2) begin
+                    end else if (cmd[30:23] == 2) begin
                         writing <= 1;
                         quad <= 0;
-                    end else if (next_cmd[31:24] == 8'h6B) begin
+                    end else if (cmd[30:23] == 8'h6B) begin
                         reading <= 1;
                         quad <= 1;
                         delay <= 1;
                         ever_quad <= 1;
-                    end else if (next_cmd[31:24] == 8'h32) begin
+                    end else if (cmd[30:23] == 8'h32) begin
                         writing <= 1;
                         quad <= 1;
                     end else begin
@@ -128,14 +130,10 @@ module spi_slave #( parameter RAM_LEN_BITS = 3, parameter DEBUG_LEN_BITS = 3, FA
                     end
                 end
             end else if (delay) begin
-                if (next_start_count == FAST_READ_DELAY - 1) begin
-                    spi_d_oe <= 4'b1111;
-                end
                 if (next_start_count == FAST_READ_DELAY) begin
+                    spi_d_oe <= 4'b1111;
                     delay <= 0;
                 end
-            end else if (reading || writing) begin
-                cmd <= cmd + (quad ? 4 : 1);
             end
         end
     end
