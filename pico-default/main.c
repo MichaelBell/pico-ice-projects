@@ -34,10 +34,10 @@
 #include "ice_fpga.h"
 #include "ice_led.h"
 #include "ice_sram.h"
-#include "ice_fram.h"
+//#include "ice_fram.h"
 #include "ice_spi.h"
 
-//#include "sram.h"
+#include "sram.h"
 
 #include "logic_analyser.h"
 
@@ -47,7 +47,7 @@ void test_spi();
 #define UART_RX_PIN 1
 
 int main(void) {
-    set_sys_clock_khz(120 * 1000, true);
+    set_sys_clock_khz(240 * 1000, true);
     stdio_init_all();
 
     ice_fpga_stop();
@@ -67,9 +67,11 @@ int main(void) {
         tud_task();
     }
     printf("Hello world\n");
+    printf("%02x%02x%02x%02x\n", emu_ram[0], emu_ram[1], emu_ram[2], emu_ram[3]);
+    printf("%02x%02x%02x%02x\n", emu_ram[0], emu_ram[1], emu_ram[2], emu_ram[3]);
 #endif
 
-    //setup_simulated_sram();
+    setup_simulated_sram();
 
 #if 0
     ice_fram_init(true);
@@ -79,9 +81,9 @@ int main(void) {
     printf("FRAM ID: %02x:%02x:%02x:%02x\n", id[0], id[1], id[2], id[3]);
 #endif
 
-    //ice_sram_init();
-    //ice_sram_read_blocking(0, emu_ram, 65536);
-    //gpio_set_dir(ICE_SRAM_CS_PIN, GPIO_IN);
+    ice_sram_init();
+    ice_sram_read_blocking(0, emu_ram, 65536);
+    gpio_set_dir(ICE_SRAM_CS_PIN, GPIO_IN);
 
     // Let the FPGA start
     ice_fpga_init(12);
@@ -97,7 +99,7 @@ int main(void) {
     }
 
     // Arm the LA
-    logic_analyser_init(pio0, 3, 5, 10000, 50);
+    logic_analyser_init(pio0, 2, 6, 20000, 60);
     logic_analyser_arm(4, false);
 
     //logic_analyser_print_capture_buf();
@@ -123,7 +125,7 @@ int main(void) {
 #if 0
         if (!done_capture && logic_analyser_is_capture_done()) {
             done_capture = true;
-            logic_analyser_print_capture_buf(2500);
+            logic_analyser_print_capture_buf(12000);
         }
 #endif
     }

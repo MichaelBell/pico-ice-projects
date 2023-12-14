@@ -14,13 +14,13 @@
 #define pio_write_offset 0  // This must be 0
 
 // For 24 bit addresses, the commands are left shifted.
-#define READ_CMD (0x03 << (SIM_SRAM_ADDR_BITS - 16))
-#define FAST_READ_CMD (0x0B << (SIM_SRAM_ADDR_BITS - 16))
-#define WRITE_CMD (0x02 << (SIM_SRAM_ADDR_BITS - 16))
+#define READ_CMD (0x03 << (SIM_SRAM_ADDR_BITS - 17))
+#define FAST_READ_CMD (0x0B << (SIM_SRAM_ADDR_BITS - 17))
+#define WRITE_CMD (0x02 << (SIM_SRAM_ADDR_BITS - 17))
 
 static int pio_read_offset;
 
-uint8_t __attribute__((section(".spi_ram.emu_ram"))) emu_ram[65536];
+uint8_t __attribute__((section(".spi_ram.emu_ram"))) emu_ram[1 << 17];
 
 static void setup_sram_pio()
 {
@@ -33,7 +33,7 @@ static void setup_sram_pio()
     sram_write_program_init(SIM_SRAM_pio_write, SIM_SRAM_pio_write_sm, pio_write_offset, SIM_SRAM_SPI_MOSI, SIM_SRAM_SPI_MISO);
 
 #if SIM_SRAM_ADDR_BITS != 16
-    SIM_SRAM_pio_read->instr_mem[pio_read_offset + 1] = pio_encode_set(pio_x, SIM_SRAM_ADDR_BITS - 9);
+    SIM_SRAM_pio_read->instr_mem[pio_read_offset + 1] = pio_encode_set(pio_x, SIM_SRAM_ADDR_BITS - 10);
     SIM_SRAM_pio_write->instr_mem[pio_write_offset + 1] = pio_encode_set(pio_x, SIM_SRAM_ADDR_BITS + 6);
 #endif
 }
@@ -53,7 +53,7 @@ static void setup_rx_channel()
         &c,            // The configuration we just created
         NULL,           // The initial write address
         &SIM_SRAM_pio_read->rxf[SIM_SRAM_pio_read_sm],           // The initial read address
-        65536, // Number of transfers; in this case each is 1 byte.
+        1 << 17, // Number of transfers; in this case each is 1 byte.
         false           // Start immediately.
     );
 }
@@ -75,7 +75,7 @@ static void setup_tx_channel()
         &c,            // The configuration we just created
         &SIM_SRAM_pio_write->txf[SIM_SRAM_pio_write_sm],           // The initial write address
         NULL,           // The initial read address
-        65536, // Number of transfers; in this case each is 1 byte.
+        1 << 17, // Number of transfers; in this case each is 1 byte.
         false           // Start immediately.
     );
 

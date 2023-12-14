@@ -17,7 +17,7 @@ add_executable(${CMAKE_PROJECT_NAME}
     usb_descriptors.c
     logic_analyser.c
     spi-ram.c
-    #sram.c
+    sram.c
     )
 target_link_libraries(${CMAKE_PROJECT_NAME}
     pico_ice_sdk

@@ -36,4 +36,4 @@
 // are claimed.
 uint8_t* setup_simulated_sram();
 
-extern uint8_t emu_ram[65536];
+extern uint8_t emu_ram[1 << 17];

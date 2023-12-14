@@ -23,10 +23,10 @@ read_cmd_loop:
     jmp x--, read_cmd_loop
     wait 0 pin 1
     push
-    in y, 16
+    in y, 15
     wait 1 pin 1
     in pins, 1
-    set x, 12
+    set x, 13
 read_addr_loop:
     wait 0 pin 1
     wait 1 pin 1
@@ -107,7 +107,7 @@ void sram_read_program_init(PIO pio, uint sm, uint offset, uint mosi) {
     sm_config_set_in_pins(&c, mosi);
     sm_config_set_in_shift(&c, false, true, 32);
 
-    pio_sm_put(pio, sm, 0x2003);
+    pio_sm_put(pio, sm, 0x1001);
     pio_sm_exec(pio, sm, pio_encode_pull(false, true));
     pio_sm_exec(pio, sm, pio_encode_mov(pio_y, pio_osr));
 
